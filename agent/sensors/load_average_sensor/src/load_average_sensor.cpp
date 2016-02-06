@@ -28,7 +28,10 @@ SOFTWARE.
 
 #include <fcntl.h>
 #include <unistd.h>
-#include <string.h>
+#include <cstring>
+
+#include <cstdlib>
+#include <cerrno>
 
 #include <cstdlib>
 #include <cerrno>
@@ -57,7 +60,7 @@ namespace vikki
 		}
 
 		char buffer[8192];
-		char *ptr = buffer;
+		char *pbuff = buffer;
 
 		int len = read(fd, buffer, sizeof(buffer));
 		if (len < 0)
@@ -67,11 +70,17 @@ namespace vikki
 			throw exception("Can't read /proc/loadavg, error code: " + std::to_string(errno));
 		}
 
+		double la1 = strtod(pbuff, &pbuff);
+		double la5 = strtod(pbuff, &pbuff);
+		double la15 = strtod(pbuff, &pbuff);
+
 		std::vector<char> result(sizeof(double) * 3);
 
-		*reinterpret_cast<double*>(result.data()) = strtod(ptr, &ptr);
-		*reinterpret_cast<double*>(result.data() + sizeof(double)) = strtod(ptr, &ptr);
-		*reinterpret_cast<double*>(result.data() + sizeof(double) * 2) = strtod(ptr, &ptr);
+		void *ptr = result.data();
+
+		write_data<double>(ptr, la1, &ptr);
+		write_data<double>(ptr, la5, &ptr);
+		write_data<double>(ptr, la15, &ptr);
 
 		int err = close(fd);
 		if (err < 0)
